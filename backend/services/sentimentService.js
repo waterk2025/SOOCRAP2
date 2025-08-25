@@ -558,6 +558,7 @@ async function testModelPerformance(testText = "한국수자원공사가 환경 
 }
 
 module.exports = {
+<<<<<<< HEAD
   // 고도화된 감정분석 함수들
   analyzeSentiment,
   analyzeAllExistingData,
@@ -567,3 +568,7 @@ module.exports = {
   // 기존 호환성을 위한 함수
   analyzeSentiment: analyzeSentiment
 }; 
+=======
+  analyzeSentiment
+};
+>>>>>>> ff33f3cafcf52260c6134d25b5fa96b7616653fc

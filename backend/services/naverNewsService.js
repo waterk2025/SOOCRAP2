@@ -130,4 +130,4 @@ async function getNaverNews(query, display, start, sort) {
 module.exports = {
   getNaverNews,
   NaverNewsService
-}; 
+};

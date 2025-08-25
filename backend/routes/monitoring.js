@@ -307,6 +307,7 @@ function extractKeywords(content, searchKeyword) {
   return foundKeywords.length > 0 ? foundKeywords : [searchKeyword || '수자원'];
 }
 
+<<<<<<< HEAD
 // 키워드 기반 감정분석 함수 (폴백용)
 function fallbackSentimentAnalysis(text) {
   if (!text) return 'neutral';
@@ -545,4 +546,6 @@ router.get('/sentiment/stats', async (req, res) => {
   }
 });
 
+=======
+>>>>>>> ff33f3cafcf52260c6134d25b5fa96b7616653fc
 module.exports = router;

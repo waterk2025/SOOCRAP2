@@ -46,4 +46,4 @@ async function testServerAPI() {
   }
 }
 
-testServerAPI(); 
+testServerAPI();

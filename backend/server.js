@@ -38,4 +38,4 @@ app.listen(PORT, () => {
   console.log(`🚀 서버가 포트 ${PORT}에서 실행 중입니다.`);
   console.log(`📡 프론트엔드: ${process.env.FRONTEND_URL || 'http://localhost:3000'}`);
   console.log(`🔗 API 엔드포인트: http://localhost:${PORT}/api`);
-}); 
+});

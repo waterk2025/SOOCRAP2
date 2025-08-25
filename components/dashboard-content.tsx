@@ -1,4 +1,3 @@
-// page.tsx에서 components 폴더 하위 tsx파일들을 import 사용중 (구조)
 "use client"
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
@@ -113,7 +112,20 @@ export default function DashboardContent() {
                 </PieChart>
               </ResponsiveContainer>
             </div>
-            <div className="text-sm text-gray-600 mt-2">65% 긍정</div>
+            <div className="flex justify-between items-center mt-3 text-xs">
+              <div className="flex items-center gap-1">
+                <div className="w-2 h-2 rounded-full bg-green-500"></div>
+                <span className="text-gray-600">긍정 65%</span>
+              </div>
+              <div className="flex items-center gap-1">
+                <div className="w-2 h-2 rounded-full bg-yellow-500"></div>
+                <span className="text-gray-600">중립 25%</span>
+              </div>
+              <div className="flex items-center gap-1">
+                <div className="w-2 h-2 rounded-full bg-red-500"></div>
+                <span className="text-gray-600">부정 10%</span>
+              </div>
+            </div>
           </CardContent>
         </Card>
       </div>
