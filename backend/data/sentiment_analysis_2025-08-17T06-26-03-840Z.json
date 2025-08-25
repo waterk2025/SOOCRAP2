@@ -1,0 +1,9 @@
+{
+  "0": "}",
+  "success": true,
+  "data_source": "backend/data",
+  "analysis_timestamp": "2025-08-17T06:26:03.839Z",
+  "model_used": "klue/bert-base",
+  "processing_time_ms": 10514,
+  "input_data_count": 36
+}
