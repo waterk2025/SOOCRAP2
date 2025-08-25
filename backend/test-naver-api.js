@@ -58,4 +58,4 @@ async function testNaverAPI() {
   }
 }
 
-testNaverAPI(); 
+testNaverAPI();

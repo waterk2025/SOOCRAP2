@@ -76,4 +76,4 @@ function analyzeSentiment(text) {
 
 module.exports = {
   analyzeSentiment
-}; 
+};

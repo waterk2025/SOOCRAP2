@@ -123,4 +123,4 @@ function extractKeywords(text, searchKeyword) {
   return [...new Set(keywords)];
 }
 
-module.exports = router; 
+module.exports = router;
