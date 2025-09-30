@@ -1,6 +1,6 @@
 const { PythonShell } = require('python-shell');
 const path = require('path');
-const fs = require('fs-extra');
+const fs = require('fs').promises;
 
 /**
  * 고도화된 한국어 감정분석 서비스
@@ -94,12 +94,9 @@ async function runPythonSentimentAnalysis(newsData, modelName = "klue/bert-base"
       pyshell.on('message', function (message) {
         messageCount++;
         console.log(`📈 Python 스크립트 메시지 #${messageCount}:`, message);
-        console.log(`📊 메시지 타입:`, typeof message);
-        console.log(`📏 메시지 길이:`, message ? message.length : 0);
         
         // 출력을 버퍼에 누적 (여러 줄 출력 처리)
         outputBuffer += message + '\n';
-        result = message;
       });
       
       pyshell.on('error', function (err) {
@@ -113,7 +110,7 @@ async function runPythonSentimentAnalysis(newsData, modelName = "klue/bert-base"
       
       pyshell.end(function (err) {
         console.log('🏁 Python 스크립트 실행 완료');
-        console.log('📊 최종 결과:', result);
+        console.log('📊 출력 버퍼 내용:', outputBuffer);
 
         
         if (err) {
@@ -124,37 +121,34 @@ async function runPythonSentimentAnalysis(newsData, modelName = "klue/bert-base"
         if (error) {
           console.error('❌ 에러로 인한 실패');
           reject(error);
-        } else if (result) {
+        } else if (outputBuffer.trim()) {
           console.log('✅ 결과 처리 시작...');
           try {
             // JSON 파싱 시도
             let parsedResult;
-            if (typeof result === 'string') {
-              console.log('🔄 문자열 결과 JSON 파싱 시도...');
-              
-              // Python 출력에서 JSON 부분만 추출
-              let jsonContent = result.trim();
-              
-              // 로그나 에러 메시지가 JSON 앞에 있을 수 있으므로 '{'로 시작하는 부분 찾기
-              const jsonStartIndex = jsonContent.indexOf('{');
-              if (jsonStartIndex !== -1) {
-                jsonContent = jsonContent.substring(jsonStartIndex);
-                console.log('🔍 JSON 시작 위치 찾음, 추출된 내용:', jsonContent.substring(0, 100) + '...');
-              }
-              
-              try {
-                parsedResult = JSON.parse(jsonContent);
-                console.log('✅ JSON 파싱 성공');
-              } catch (parseError) {
-                console.warn('⚠️ JSON 파싱 실패, 원본 데이터 반환:', parseError.message);
-                console.log('📝 파싱 실패한 원본 데이터:', result);
-                console.log('📝 추출 시도한 JSON 내용:', jsonContent);
-                parsedResult = result;
-              }
-            } else {
-              console.log('✅ 객체 결과 사용');
-              parsedResult = result;
+            const fullOutput = outputBuffer.trim();
+            console.log('🔄 전체 출력 JSON 파싱 시도...');
+            
+            // Python 출력에서 JSON 부분만 추출
+            let jsonContent = fullOutput;
+            
+            // 로그나 에러 메시지가 JSON 앞에 있을 수 있으므로 '{'로 시작하는 부분 찾기
+            const jsonStartIndex = jsonContent.indexOf('{');
+            if (jsonStartIndex !== -1) {
+              jsonContent = jsonContent.substring(jsonStartIndex);
+              console.log('🔍 JSON 시작 위치 찾음, 추출된 내용:', jsonContent.substring(0, 100) + '...');
             }
+            
+            try {
+              parsedResult = JSON.parse(jsonContent);
+              console.log('✅ JSON 파싱 성공');
+            } catch (parseError) {
+              console.warn('⚠️ JSON 파싱 실패, 원본 데이터 반환:', parseError.message);
+              console.log('📝 파싱 실패한 원본 데이터:', fullOutput);
+              console.log('📝 추출 시도한 JSON 내용:', jsonContent);
+              parsedResult = { error: 'JSON 파싱 실패', raw_output: fullOutput };
+            }
+            
             console.log('🎯 최종 반환 결과:', parsedResult);
             resolve(parsedResult);
           } catch (parseError) {
@@ -186,28 +180,33 @@ async function loadExistingNewsData() {
     console.log('📁 데이터 디렉토리 경로:', dataDir);
     
     // data 폴더가 없으면 빈 배열 반환
-    if (!await fs.pathExists(dataDir)) {
+    try {
+      await fs.access(dataDir);
+    } catch (error) {
       console.log('📁 data 폴더가 존재하지 않습니다.');
       return [];
     }
     
     console.log('✅ data 폴더 존재 확인 완료');
     
-    // JSON 파일들 찾기
-    console.log('🔍 JSON 파일 검색 중...');
+    // 뉴스 데이터 JSON 파일들만 찾기
+    console.log('🔍 뉴스 데이터 JSON 파일 검색 중...');
     const files = await fs.readdir(dataDir);
     console.log(`📋 전체 파일 목록 (${files.length}개):`, files);
     
-    const jsonFiles = files.filter(file => file.endsWith('.json')).sort().reverse();
-    console.log(`📄 JSON 파일 목록 (${jsonFiles.length}개):`, jsonFiles);
+    // news_data_ 로 시작하는 JSON 파일만 필터링
+    const newsJsonFiles = files.filter(file => 
+      file.startsWith('news_data_') && file.endsWith('.json')
+    ).sort().reverse();
+    console.log(`📄 뉴스 데이터 JSON 파일 목록 (${newsJsonFiles.length}개):`, newsJsonFiles);
     
-    if (jsonFiles.length === 0) {
-      console.log('📁 JSON 데이터 파일이 없습니다.');
+    if (newsJsonFiles.length === 0) {
+      console.log('📁 뉴스 데이터 파일이 없습니다.');
       return [];
     }
     
     // 가장 최근 파일 로드
-    const latestFile = jsonFiles[0];
+    const latestFile = newsJsonFiles[0];
     console.log('⭐ 가장 최근 파일 선택:', latestFile);
     
     const filepath = path.join(dataDir, latestFile);
@@ -381,10 +380,13 @@ async function saveSentimentAnalysisResult(result) {
     const filepath = path.join(dataDir, filename);
     
     // data 폴더가 없으면 생성
-    await fs.ensureDir(dataDir);
+    const fsSync = require('fs');
+    if (!fsSync.existsSync(dataDir)) {
+      fsSync.mkdirSync(dataDir, { recursive: true });
+    }
     
     // 결과를 JSON 파일로 저장
-    await fs.writeJson(filepath, result, { spaces: 2 });
+    await fs.writeFile(filepath, JSON.stringify(result, null, 2), 'utf8');
     
     console.log(`💾 감정분석 결과 저장: ${filepath}`);
     
@@ -405,7 +407,7 @@ function fallbackSentimentAnalysis(textOrData) {
   const POSITIVE_KEYWORDS = [
     '성공', '개선', '혁신', '발전', '증가', '상승', '긍정', '좋은', '훌륭한',
     '효과적', '효율적', '친환경', '지속가능', '안전', '신뢰', '투명',
-    '혜택', '이익', '성과', '성취', '완료', '해결', '개선', '최적화'
+    '혜택', '이익', '성과', '성취', '완료', '해결', '개선', '최적화', "나눔", "공동체", "사회공헌"
   ];
   
   const NEGATIVE_KEYWORDS = [
@@ -513,62 +515,13 @@ function getAvailableModels() {
   return KOREAN_SENTIMENT_MODELS;
 }
 
-/**
- * 모델 성능 테스트
- * @param {string} testText - 테스트할 텍스트
- * @returns {Promise<Object>} 테스트 결과
- */
-async function testModelPerformance(testText = "한국수자원공사가 환경 보호에 기여하는 혁신적인 기술을 개발했습니다.") {
-  try {
-    console.log('🧪 모델 성능 테스트 시작');
-    
-    const results = {};
-    
-    // 각 모델로 테스트
-    for (const [modelKey, modelInfo] of Object.entries(KOREAN_SENTIMENT_MODELS)) {
-      try {
-        console.log(`🧪 ${modelKey} 모델 테스트 중...`);
-        const result = await analyzeSentiment(testText, modelInfo.name);
-        results[modelKey] = {
-          ...result,
-          model_info: modelInfo
-        };
-      } catch (error) {
-        console.error(`❌ ${modelKey} 모델 테스트 실패:`, error.message);
-        results[modelKey] = {
-          error: error.message,
-          model_info: modelInfo
-        };
-      }
-    }
-    
-    return {
-      test_text: testText,
-      results: results,
-      timestamp: new Date().toISOString()
-    };
-    
-  } catch (error) {
-    console.error('❌ 모델 성능 테스트 실패:', error.message);
-    return {
-      error: error.message,
-      test_text: testText
-    };
-  }
-}
 
 module.exports = {
-<<<<<<< HEAD
   // 고도화된 감정분석 함수들
   analyzeSentiment,
   analyzeAllExistingData,
-  testModelPerformance,
   getAvailableModels,
   
   // 기존 호환성을 위한 함수
   analyzeSentiment: analyzeSentiment
 }; 
-=======
-  analyzeSentiment
-};
->>>>>>> ff33f3cafcf52260c6134d25b5fa96b7616653fc

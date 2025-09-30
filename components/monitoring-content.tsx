@@ -13,12 +13,14 @@ interface MentionData {
   id: number
   content: string
   sentiment: 'positive' | 'negative' | 'neutral'
+  confidence?: number // AI 분석 신뢰도
+  aiAnalyzed?: boolean // AI 분석 여부
   source: string
   author: string
   timestamp: string
   url: string
   keywords: string[]
-  title: string // Added title to the interface
+  title: string
   query: string // 개별 쿼리 정보
   uniqueId: string // 고유 ID (중복 제거용)
 }
@@ -227,6 +229,29 @@ export default function MonitoringContent() {
     }
   }
 
+  const getAISentimentBadge = (mention: MentionData) => {
+    const baseColor = getSentimentColor(mention.sentiment);
+    const sentimentText = getSentimentText(mention.sentiment);
+    
+    if (mention.aiAnalyzed) {
+      const confidence = mention.confidence ? Math.round(mention.confidence * 100) : 50;
+      return (
+        <div className="flex items-center gap-1">
+          <Badge className={`${baseColor} border-blue-500`}>
+            🤖 {sentimentText}
+          </Badge>
+          <span className="text-xs text-blue-600 font-medium">{confidence}%</span>
+        </div>
+      );
+    } else {
+      return (
+        <Badge className={`${baseColor} border-gray-400`}>
+          🔑 {sentimentText}
+        </Badge>
+      );
+    }
+  }
+
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-[400px]">
@@ -302,7 +327,17 @@ export default function MonitoringContent() {
       {/* Mentions Feed */}
       <Card>
         <CardHeader>
-          <CardTitle>실시간 언급 피드</CardTitle>
+          <CardTitle className="flex items-center gap-2">
+            실시간 언급 피드
+            <div className="flex items-center gap-1 text-sm">
+              <Badge variant="outline" className="text-xs bg-blue-50 text-blue-700">
+                🤖 AI: {filteredMentions.filter(m => m.aiAnalyzed).length}개
+              </Badge>
+              <Badge variant="outline" className="text-xs bg-gray-50 text-gray-700">
+                🔑 키워드: {filteredMentions.filter(m => !m.aiAnalyzed).length}개
+              </Badge>
+            </div>
+          </CardTitle>
           <CardDescription>{filteredMentions.length}개 언급 표시 중</CardDescription>
         </CardHeader>
         <CardContent>
@@ -317,9 +352,7 @@ export default function MonitoringContent() {
                     <span className="text-gray-500 text-sm">•</span>
                     <span className="text-gray-500 text-sm">{mention.timestamp}</span>
                   </div>
-                  <Badge className={getSentimentColor(mention.sentiment)}>
-                    {getSentimentText(mention.sentiment)}
-                  </Badge>
+                  {getAISentimentBadge(mention)}
                 </div>
 
                 {/* 제목 표출 */}

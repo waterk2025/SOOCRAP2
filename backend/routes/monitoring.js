@@ -4,7 +4,6 @@ const { getNaverNews } = require('../services/naverNewsService');
 const { 
   analyzeSentiment, 
   analyzeAllExistingData, 
-  testModelPerformance, 
   getAvailableModels 
 } = require('../services/sentimentService');
 
@@ -100,20 +99,9 @@ router.get('/mentions', async (req, res) => {
       allNewsData = filteredNewsData;
     }
     
-    // 감성 분석 적용
-    const mentionsWithSentiment = allNewsData.map(item => ({
-      id: item.id,
-      title: item.title,
-      content: item.description,
-      sentiment: fallbackSentimentAnalysis(item.description), // 키워드 기반 감정분석 사용
-      source: '네이버 뉴스',
-      author: item.author || '기자',
-      timestamp: item.pubDate,
-      url: item.link,
-      keywords: extractKeywords(item.description, item.searchKeyword || query),
-      query: item.query || query, // 개별 쿼리 정보 포함
-      uniqueId: item.uniqueId // 고유 ID 포함
-    }));
+    // AI 기반 감성 분석 적용
+    console.log('🤖 실시간 뉴스 데이터에 AI 감정분석 적용 시작...');
+    const mentionsWithSentiment = await applyAISentimentAnalysis(allNewsData, query);
     
     res.json({
       success: true,
@@ -264,7 +252,8 @@ function filterExcludedUrls(newsData) {
     'fashion',
     'cosmetic',
     'makeup',
-    'skincare'
+    'skincare',
+    '리그'
   ];
   
   const filteredData = newsData.filter(item => {
@@ -291,7 +280,7 @@ function extractKeywords(content, searchKeyword) {
   
   // 기본 키워드 목록
   const baseKeywords = [
-    '수자원', '물관리', '댐', '수력발전', '수상태양광', 
+    '수자원', '물관리', '수력발전', '수상태양광', 
     '디지털플랫폼', 'Kwater', '한국수자원공사'
   ];
   
@@ -307,7 +296,6 @@ function extractKeywords(content, searchKeyword) {
   return foundKeywords.length > 0 ? foundKeywords : [searchKeyword || '수자원'];
 }
 
-<<<<<<< HEAD
 // 키워드 기반 감정분석 함수 (폴백용)
 function fallbackSentimentAnalysis(text) {
   if (!text) return 'neutral';
@@ -368,6 +356,102 @@ function fallbackSentimentAnalysis(text) {
   if (positiveScore > negativeScore) return 'positive';
   else if (negativeScore > positiveScore) return 'negative';
   else return 'neutral';
+}
+
+// AI 기반 실시간 감정분석 함수
+async function applyAISentimentAnalysis(newsData, query) {
+  try {
+    console.log(`🤖 AI 감정분석 시작: ${newsData.length}개 뉴스 데이터`);
+    
+    if (newsData.length === 0) {
+      return [];
+    }
+    
+    // AI 감정분석 실행 (빠른 처리를 위해 적은 수의 데이터만)
+    const limitedData = newsData.slice(0, 10); // 처음 10개만 AI 분석
+    console.log(`⚡ 성능 최적화: ${limitedData.length}개 데이터만 AI 분석 적용`);
+    
+    let aiResults = null;
+    try {
+      // AI 감정분석 실행
+      aiResults = await analyzeSentiment(limitedData, 'klue/bert-base');
+      console.log('✅ AI 감정분석 성공');
+    } catch (aiError) {
+      console.error('❌ AI 감정분석 실패, 키워드 기반으로 폴백:', aiError.message);
+    }
+    
+    // 결과 매핑
+    const results = newsData.map((item, index) => {
+      let sentiment = 'neutral';
+      let confidence = 0.5;
+      let aiAnalyzed = false;
+      
+      // AI 분석 결과가 있고, 해당 인덱스의 결과가 있으면 사용
+      if (aiResults && aiResults.individual_results && index < aiResults.individual_results.length) {
+        const aiResult = aiResults.individual_results[index];
+        if (aiResult && aiResult.sentiment) {
+          sentiment = aiResult.sentiment.toLowerCase();
+          confidence = aiResult.confidence || 0.5;
+          aiAnalyzed = true;
+          console.log(`🎯 AI 분석 결과 적용 [${index}]: ${sentiment} (${(confidence * 100).toFixed(1)}%)`);
+        }
+      }
+      
+      // AI 분석 결과가 없으면 키워드 기반 폴백
+      if (!aiAnalyzed) {
+        sentiment = fallbackSentimentAnalysis(item.description);
+        console.log(`🔄 키워드 기반 폴백 [${index}]: ${sentiment}`);
+      }
+      
+      return {
+        id: item.id,
+        title: item.title,
+        content: item.description,
+        sentiment: sentiment,
+        confidence: confidence,
+        aiAnalyzed: aiAnalyzed,
+        source: '네이버 뉴스',
+        author: item.author || '기자',
+        timestamp: item.pubDate,
+        url: item.link,
+        keywords: extractKeywords(item.description, item.searchKeyword || query),
+        query: item.query || query,
+        uniqueId: item.uniqueId
+      };
+    });
+    
+    // 감정 분포 통계
+    const sentimentStats = results.reduce((acc, item) => {
+      acc[item.sentiment] = (acc[item.sentiment] || 0) + 1;
+      return acc;
+    }, {});
+    
+    console.log('📊 실시간 감정분석 결과 통계:', sentimentStats);
+    console.log(`🤖 AI 분석: ${results.filter(r => r.aiAnalyzed).length}개`);
+    console.log(`🔑 키워드 분석: ${results.filter(r => !r.aiAnalyzed).length}개`);
+    
+    return results;
+    
+  } catch (error) {
+    console.error('❌ 실시간 감정분석 전체 실패:', error.message);
+    
+    // 완전 실패 시 키워드 기반으로만 처리
+    return newsData.map(item => ({
+      id: item.id,
+      title: item.title,
+      content: item.description,
+      sentiment: fallbackSentimentAnalysis(item.description),
+      confidence: 0.5,
+      aiAnalyzed: false,
+      source: '네이버 뉴스',
+      author: item.author || '기자',
+      timestamp: item.pubDate,
+      url: item.link,
+      keywords: extractKeywords(item.description, item.searchKeyword || query),
+      query: item.query || query,
+      uniqueId: item.uniqueId
+    }));
+  }
 }
 
 // 고도화된 감정분석 API 엔드포인트들
@@ -442,30 +526,6 @@ router.post('/sentiment/analyze-text', async (req, res) => {
     res.status(500).json({
       success: false,
       error: '텍스트 감정분석 중 오류가 발생했습니다.',
-      details: error.message
-    });
-  }
-});
-
-// 모델 성능 테스트
-router.post('/sentiment/test-models', async (req, res) => {
-  try {
-    const { test_text = "한국수자원공사가 환경 보호에 기여하는 혁신적인 기술을 개발했습니다." } = req.body;
-    
-    console.log('🧪 모델 성능 테스트 시작');
-    
-    const result = await testModelPerformance(test_text);
-    
-    res.json({
-      success: true,
-      ...result
-    });
-    
-  } catch (error) {
-    console.error('❌ 모델 성능 테스트 실패:', error.message);
-    res.status(500).json({
-      success: false,
-      error: '모델 성능 테스트 중 오류가 발생했습니다.',
       details: error.message
     });
   }
@@ -546,6 +606,4 @@ router.get('/sentiment/stats', async (req, res) => {
   }
 });
 
-=======
->>>>>>> ff33f3cafcf52260c6134d25b5fa96b7616653fc
 module.exports = router;

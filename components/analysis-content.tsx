@@ -338,7 +338,7 @@ export default function AnalysisContent() {
         <Card>
           <CardHeader>
             <CardTitle>시간대별 활동</CardTitle>
-            <CardDescription>K-water가 가장 많이 언급되는 시간</CardDescription>
+            <CardDescription>K-water 관련 키워드가 가장 많이 언급되는 시간</CardDescription>
           </CardHeader>
           <CardContent>
             <div className="h-[300px]">

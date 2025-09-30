@@ -29,6 +29,9 @@ const trendData = [
   { date: "4월", positive: 280, neutral: 180, negative: 90 },
   { date: "5월", positive: 590, neutral: 250, negative: 110 },
   { date: "6월", positive: 390, neutral: 200, negative: 85 },
+  { date: "7월", positive: 450, neutral: 220, negative: 95 },
+  { date: "8월", positive: 520, neutral: 260, negative: 75 },
+  { date: "9월", positive: 480, neutral: 190, negative: 80 },
 ]
 
 const trendingTopics = [
@@ -65,7 +68,7 @@ const recentMentions = [
   {
     id: 4,
     content: "한국수자원공사의 스마트 워터 시티 사업이 기대됩니다",
-    sentiment: "neutral",
+    sentiment: "positive",
     source: "페이스북",
     time: "8시간 전",
   },

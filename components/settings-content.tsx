@@ -38,8 +38,8 @@ interface MonitoringPolicy {
 export default function SettingsContent() {
   const [targets, setTargets] = useState<MonitoringTarget[]>([
     { id: 1, name: "네이버 뉴스 - K-water", url: "https://news.naver.com", type: "뉴스", status: "active" },
-    { id: 2, name: "다음 카페 - 수자원", url: "https://cafe.daum.net", type: "커뮤니티", status: "active" },
-    { id: 3, name: "트위터 - 한국수자원공사", url: "https://twitter.com", type: "소셜미디어", status: "active" },
+    { id: 2, name: "다음 카페 - 수자원", url: "https://cafe.daum.net", type: "커뮤니티", status: "inactive" },
+    { id: 3, name: "트위터 - 한국수자원공사", url: "https://twitter.com", type: "소셜미디어", status: "inactive" },
     { id: 4, name: "페이스북 - 물 관련", url: "https://facebook.com", type: "소셜미디어", status: "inactive" },
   ])
 

@@ -68,13 +68,7 @@ POST /api/monitoring/sentiment/analyze-text
 Body: { "text": "분석할 텍스트", "model_name": "모델명" }
 ```
 
-### 4. 모델 성능 테스트
-```
-POST /api/monitoring/sentiment/test-models
-Body: { "test_text": "테스트 텍스트" }
-```
-
-### 5. 감정분석 통계
+### 4. 감정분석 통계
 ```
 GET /api/monitoring/sentiment/stats
 ```

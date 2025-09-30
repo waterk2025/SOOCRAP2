@@ -1,0 +1,376 @@
+{
+  "model_info": {
+    "model_name": "klue/bert-base",
+    "labels": [
+      "Negative",
+      "Neutral",
+      "Positive"
+    ],
+    "threshold": 0.6
+  },
+  "total_analyzed": 35,
+  "sentiment_distribution": {
+    "positive": 0,
+    "negative": 0,
+    "neutral": 35
+  },
+  "average_confidence": 0.40707605395998275,
+  "individual_results": [
+    {
+      "sentiment": "Neutral",
+      "confidence": 0.3619174361228943,
+      "scores": {
+        "negative": 0.30983537435531616,
+        "neutral": 0.3619174361228943,
+        "positive": 0.3282471299171448
+      },
+      "model": "klue/bert-base"
+    },
+    {
+      "sentiment": "Neutral",
+      "confidence": 0.44161683320999146,
+      "scores": {
+        "negative": 0.17427915334701538,
+        "neutral": 0.44161683320999146,
+        "positive": 0.38410401344299316
+      },
+      "model": "klue/bert-base"
+    },
+    {
+      "sentiment": "Neutral",
+      "confidence": 0.4827063977718353,
+      "scores": {
+        "negative": 0.4827063977718353,
+        "neutral": 0.28502482175827026,
+        "positive": 0.23226876556873322
+      },
+      "model": "klue/bert-base"
+    },
+    {
+      "sentiment": "Neutral",
+      "confidence": 0.3565674126148224,
+      "scores": {
+        "negative": 0.3476228415966034,
+        "neutral": 0.2958097755908966,
+        "positive": 0.3565674126148224
+      },
+      "model": "klue/bert-base"
+    },
+    {
+      "sentiment": "Neutral",
+      "confidence": 0.4374803602695465,
+      "scores": {
+        "negative": 0.18441759049892426,
+        "neutral": 0.4374803602695465,
+        "positive": 0.3781020939350128
+      },
+      "model": "klue/bert-base"
+    },
+    {
+      "sentiment": "Neutral",
+      "confidence": 0.3942262828350067,
+      "scores": {
+        "negative": 0.3430744409561157,
+        "neutral": 0.3942262828350067,
+        "positive": 0.26269927620887756
+      },
+      "model": "klue/bert-base"
+    },
+    {
+      "sentiment": "Neutral",
+      "confidence": 0.38841262459754944,
+      "scores": {
+        "negative": 0.38841262459754944,
+        "neutral": 0.252220094203949,
+        "positive": 0.3593672811985016
+      },
+      "model": "klue/bert-base"
+    },
+    {
+      "sentiment": "Neutral",
+      "confidence": 0.38316425681114197,
+      "scores": {
+        "negative": 0.27015799283981323,
+        "neutral": 0.3466777801513672,
+        "positive": 0.38316425681114197
+      },
+      "model": "klue/bert-base"
+    },
+    {
+      "sentiment": "Neutral",
+      "confidence": 0.4097205698490143,
+      "scores": {
+        "negative": 0.21472316980361938,
+        "neutral": 0.4097205698490143,
+        "positive": 0.3755563497543335
+      },
+      "model": "klue/bert-base"
+    },
+    {
+      "sentiment": "Neutral",
+      "confidence": 0.40395426750183105,
+      "scores": {
+        "negative": 0.40395426750183105,
+        "neutral": 0.3815533220767975,
+        "positive": 0.21449235081672668
+      },
+      "model": "klue/bert-base"
+    },
+    {
+      "sentiment": "Neutral",
+      "confidence": 0.4239407777786255,
+      "scores": {
+        "negative": 0.2204764038324356,
+        "neutral": 0.4239407777786255,
+        "positive": 0.3555828630924225
+      },
+      "model": "klue/bert-base"
+    },
+    {
+      "sentiment": "Neutral",
+      "confidence": 0.3883444368839264,
+      "scores": {
+        "negative": 0.3883444368839264,
+        "neutral": 0.24469417333602905,
+        "positive": 0.36696138978004456
+      },
+      "model": "klue/bert-base"
+    },
+    {
+      "sentiment": "Neutral",
+      "confidence": 0.4285266101360321,
+      "scores": {
+        "negative": 0.2163030058145523,
+        "neutral": 0.4285266101360321,
+        "positive": 0.3551703989505768
+      },
+      "model": "klue/bert-base"
+    },
+    {
+      "sentiment": "Neutral",
+      "confidence": 0.37235668301582336,
+      "scores": {
+        "negative": 0.36491501331329346,
+        "neutral": 0.2627283036708832,
+        "positive": 0.37235668301582336
+      },
+      "model": "klue/bert-base"
+    },
+    {
+      "sentiment": "Neutral",
+      "confidence": 0.36072787642478943,
+      "scores": {
+        "negative": 0.28885698318481445,
+        "neutral": 0.35041511058807373,
+        "positive": 0.36072787642478943
+      },
+      "model": "klue/bert-base"
+    },
+    {
+      "sentiment": "Neutral",
+      "confidence": 0.3679262697696686,
+      "scores": {
+        "negative": 0.3679262697696686,
+        "neutral": 0.27060821652412415,
+        "positive": 0.3614654839038849
+      },
+      "model": "klue/bert-base"
+    },
+    {
+      "sentiment": "Neutral",
+      "confidence": 0.37237197160720825,
+      "scores": {
+        "negative": 0.33711129426956177,
+        "neutral": 0.29051676392555237,
+        "positive": 0.37237197160720825
+      },
+      "model": "klue/bert-base"
+    },
+    {
+      "sentiment": "Neutral",
+      "confidence": 0.4062989354133606,
+      "scores": {
+        "negative": 0.2892579138278961,
+        "neutral": 0.4062989354133606,
+        "positive": 0.3044431209564209
+      },
+      "model": "klue/bert-base"
+    },
+    {
+      "sentiment": "Neutral",
+      "confidence": 0.392769992351532,
+      "scores": {
+        "negative": 0.262717604637146,
+        "neutral": 0.392769992351532,
+        "positive": 0.344512403011322
+      },
+      "model": "klue/bert-base"
+    },
+    {
+      "sentiment": "Neutral",
+      "confidence": 0.34821635484695435,
+      "scores": {
+        "negative": 0.3415537178516388,
+        "neutral": 0.34821635484695435,
+        "positive": 0.3102298974990845
+      },
+      "model": "klue/bert-base"
+    },
+    {
+      "sentiment": "Neutral",
+      "confidence": 0.4437074065208435,
+      "scores": {
+        "negative": 0.21637475490570068,
+        "neutral": 0.3399178385734558,
+        "positive": 0.4437074065208435
+      },
+      "model": "klue/bert-base"
+    },
+    {
+      "sentiment": "Neutral",
+      "confidence": 0.3420711159706116,
+      "scores": {
+        "negative": 0.3420711159706116,
+        "neutral": 0.3368259370326996,
+        "positive": 0.32110297679901123
+      },
+      "model": "klue/bert-base"
+    },
+    {
+      "sentiment": "Neutral",
+      "confidence": 0.4361695945262909,
+      "scores": {
+        "negative": 0.23358672857284546,
+        "neutral": 0.4361695945262909,
+        "positive": 0.3302437365055084
+      },
+      "model": "klue/bert-base"
+    },
+    {
+      "sentiment": "Neutral",
+      "confidence": 0.4159611165523529,
+      "scores": {
+        "negative": 0.236420139670372,
+        "neutral": 0.3476187288761139,
+        "positive": 0.4159611165523529
+      },
+      "model": "klue/bert-base"
+    },
+    {
+      "sentiment": "Neutral",
+      "confidence": 0.3800795376300812,
+      "scores": {
+        "negative": 0.3800795376300812,
+        "neutral": 0.3098072111606598,
+        "positive": 0.31011319160461426
+      },
+      "model": "klue/bert-base"
+    },
+    {
+      "sentiment": "Neutral",
+      "confidence": 0.36344391107559204,
+      "scores": {
+        "negative": 0.33520394563674927,
+        "neutral": 0.30135220289230347,
+        "positive": 0.36344391107559204
+      },
+      "model": "klue/bert-base"
+    },
+    {
+      "sentiment": "Neutral",
+      "confidence": 0.4839024543762207,
+      "scores": {
+        "negative": 0.1445850431919098,
+        "neutral": 0.3715124726295471,
+        "positive": 0.4839024543762207
+      },
+      "model": "klue/bert-base"
+    },
+    {
+      "sentiment": "Neutral",
+      "confidence": 0.5102954506874084,
+      "scores": {
+        "negative": 0.15877214074134827,
+        "neutral": 0.3309323787689209,
+        "positive": 0.5102954506874084
+      },
+      "model": "klue/bert-base"
+    },
+    {
+      "sentiment": "Neutral",
+      "confidence": 0.4546513259410858,
+      "scores": {
+        "negative": 0.17087605595588684,
+        "neutral": 0.37447261810302734,
+        "positive": 0.4546513259410858
+      },
+      "model": "klue/bert-base"
+    },
+    {
+      "sentiment": "Neutral",
+      "confidence": 0.4270870089530945,
+      "scores": {
+        "negative": 0.2840893268585205,
+        "neutral": 0.2888236939907074,
+        "positive": 0.4270870089530945
+      },
+      "model": "klue/bert-base"
+    },
+    {
+      "sentiment": "Neutral",
+      "confidence": 0.3751795291900635,
+      "scores": {
+        "negative": 0.37367483973503113,
+        "neutral": 0.2511456608772278,
+        "positive": 0.3751795291900635
+      },
+      "model": "klue/bert-base"
+    },
+    {
+      "sentiment": "Neutral",
+      "confidence": 0.439716100692749,
+      "scores": {
+        "negative": 0.2150096744298935,
+        "neutral": 0.439716100692749,
+        "positive": 0.34527429938316345
+      },
+      "model": "klue/bert-base"
+    },
+    {
+      "sentiment": "Neutral",
+      "confidence": 0.37550848722457886,
+      "scores": {
+        "negative": 0.34440475702285767,
+        "neutral": 0.2800867259502411,
+        "positive": 0.37550848722457886
+      },
+      "model": "klue/bert-base"
+    },
+    {
+      "sentiment": "Neutral",
+      "confidence": 0.48262453079223633,
+      "scores": {
+        "negative": 0.14523695409297943,
+        "neutral": 0.37213853001594543,
+        "positive": 0.48262453079223633
+      },
+      "model": "klue/bert-base"
+    },
+    {
+      "sentiment": "Neutral",
+      "confidence": 0.39601796865463257,
+      "scores": {
+        "negative": 0.327242910861969,
+        "neutral": 0.2767391502857208,
+        "positive": 0.39601796865463257
+      },
+      "model": "klue/bert-base"
+    }
+  ],
+  "success": true,
+  "data_source": "backend/data",
+  "analysis_timestamp": "2025-09-30T05:30:08.120Z",
+  "model_used": "klue/bert-base",
+  "processing_time_ms": 20430,
+  "input_data_count": 35
+}
