@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -17,7 +17,7 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
-import { Plus, Edit, Trash2, Search } from "lucide-react"
+import { Plus, Edit, Trash2, Search, RefreshCw, AlertCircle } from "lucide-react"
 
 interface MonitoringTarget {
   id: number
@@ -43,19 +43,9 @@ export default function SettingsContent() {
     { id: 4, name: "페이스북 - 물 관련", url: "https://facebook.com", type: "소셜미디어", status: "inactive" },
   ])
 
-  const [policies, setPolicies] = useState<MonitoringPolicy[]>([
-    {
-      id: 1,
-      name: "K-water 브랜드 언급",
-      keywords: ["K-water", "한국수자원공사", "수자원공사"],
-      operator: "OR",
-      status: "active",
-    },
-    { id: 2, name: "수질 관련", keywords: ["수질", "정수", "수돗물", "물맛"], operator: "OR", status: "active" },
-    { id: 3, name: "요금 관련", keywords: ["수도요금", "요금인상", "요금체계"], operator: "OR", status: "active" },
-    { id: 4, name: "서비스 중단", keywords: ["단수", "공사", "누수", "수리"], operator: "OR", status: "active" },
-    { id: 5, name: "고객 서비스", keywords: ["고객센터", "상담", "민원", "불만"], operator: "AND", status: "inactive" },
-  ])
+  const [policies, setPolicies] = useState<MonitoringPolicy[]>([])
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
 
   const [searchTerm, setSearchTerm] = useState("")
   const [isTargetDialogOpen, setIsTargetDialogOpen] = useState(false)
@@ -76,6 +66,44 @@ export default function SettingsContent() {
     keywords: "",
     operator: "OR" as "AND" | "OR",
   })
+
+  // 백엔드에서 정책 데이터 가져오기
+  const fetchPolicies = async () => {
+    try {
+      setLoading(true)
+      setError(null)
+      
+      console.log('🚀 정책 데이터 조회 시작...')
+      
+      const response = await fetch('http://localhost:3001/api/policies')
+      
+      if (!response.ok) {
+        const errorText = await response.text()
+        console.error('❌ API 응답 오류:', errorText)
+        throw new Error(`API 호출 실패: ${response.status} - ${response.statusText}`)
+      }
+      
+      const data = await response.json()
+      console.log('📊 정책 데이터:', data)
+      
+      if (data.success && data.data) {
+        setPolicies(data.data)
+        console.log('✅ 정책 데이터 가져오기 성공:', data.data.length, '개')
+      } else {
+        throw new Error('정책 데이터를 가져올 수 없습니다.')
+      }
+    } catch (error) {
+      console.error('❌ 정책 데이터 조회 실패:', error)
+      setError(error instanceof Error ? error.message : '알 수 없는 오류가 발생했습니다.')
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  // 컴포넌트 마운트 시 정책 데이터 가져오기
+  useEffect(() => {
+    fetchPolicies()
+  }, [])
 
   const handleAddTarget = () => {
     const newTarget: MonitoringTarget = {
@@ -117,17 +145,38 @@ export default function SettingsContent() {
     setTargets(targets.filter((t) => t.id !== id))
   }
 
-  const handleAddPolicy = () => {
-    const newPolicy: MonitoringPolicy = {
-      id: Date.now(),
-      name: policyForm.name,
-      keywords: policyForm.keywords.split(",").map((k) => k.trim()),
-      operator: policyForm.operator,
-      status: "active",
+  const handleAddPolicy = async () => {
+    try {
+      const response = await fetch('http://localhost:3001/api/policies', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          name: policyForm.name,
+          keywords: policyForm.keywords.split(",").map((k) => k.trim()).filter(k => k),
+          operator: policyForm.operator,
+          status: "active"
+        })
+      })
+
+      if (!response.ok) {
+        const errorData = await response.json()
+        throw new Error(errorData.message || '정책 생성에 실패했습니다.')
+      }
+
+      const data = await response.json()
+      console.log('✅ 정책 생성 성공:', data)
+
+      // 정책 목록 새로고침
+      await fetchPolicies()
+      
+      setPolicyForm({ name: "", keywords: "", operator: "OR" })
+      setIsPolicyDialogOpen(false)
+    } catch (error) {
+      console.error('❌ 정책 생성 실패:', error)
+      setError(error instanceof Error ? error.message : '정책 생성 중 오류가 발생했습니다.')
     }
-    setPolicies([...policies, newPolicy])
-    setPolicyForm({ name: "", keywords: "", operator: "OR" })
-    setIsPolicyDialogOpen(false)
   }
 
   const handleEditPolicy = (policy: MonitoringPolicy) => {
@@ -140,28 +189,85 @@ export default function SettingsContent() {
     setIsPolicyDialogOpen(true)
   }
 
-  const handleUpdatePolicy = () => {
-    if (editingPolicy) {
-      setPolicies(
-        policies.map((p) =>
-          p.id === editingPolicy.id
-            ? {
-                ...p,
-                name: policyForm.name,
-                keywords: policyForm.keywords.split(",").map((k) => k.trim()),
-                operator: policyForm.operator,
-              }
-            : p,
-        ),
-      )
+  const handleUpdatePolicy = async () => {
+    if (!editingPolicy) return
+
+    try {
+      const response = await fetch(`http://localhost:3001/api/policies/${editingPolicy.id}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          name: policyForm.name,
+          keywords: policyForm.keywords.split(",").map((k) => k.trim()).filter(k => k),
+          operator: policyForm.operator
+        })
+      })
+
+      if (!response.ok) {
+        const errorData = await response.json()
+        throw new Error(errorData.message || '정책 수정에 실패했습니다.')
+      }
+
+      const data = await response.json()
+      console.log('✅ 정책 수정 성공:', data)
+
+      // 정책 목록 새로고침
+      await fetchPolicies()
+      
       setEditingPolicy(null)
       setPolicyForm({ name: "", keywords: "", operator: "OR" })
       setIsPolicyDialogOpen(false)
+    } catch (error) {
+      console.error('❌ 정책 수정 실패:', error)
+      setError(error instanceof Error ? error.message : '정책 수정 중 오류가 발생했습니다.')
     }
   }
 
-  const handleDeletePolicy = (id: number) => {
-    setPolicies(policies.filter((p) => p.id !== id))
+  const handleDeletePolicy = async (id: number) => {
+    try {
+      const response = await fetch(`http://localhost:3001/api/policies/${id}`, {
+        method: 'DELETE'
+      })
+
+      if (!response.ok) {
+        const errorData = await response.json()
+        throw new Error(errorData.message || '정책 삭제에 실패했습니다.')
+      }
+
+      const data = await response.json()
+      console.log('✅ 정책 삭제 성공:', data)
+
+      // 정책 목록 새로고침
+      await fetchPolicies()
+    } catch (error) {
+      console.error('❌ 정책 삭제 실패:', error)
+      setError(error instanceof Error ? error.message : '정책 삭제 중 오류가 발생했습니다.')
+    }
+  }
+
+  // 정책 상태 토글
+  const handleTogglePolicyStatus = async (policy: MonitoringPolicy) => {
+    try {
+      const response = await fetch(`http://localhost:3001/api/policies/${policy.id}/toggle`, {
+        method: 'PATCH'
+      })
+
+      if (!response.ok) {
+        const errorData = await response.json()
+        throw new Error(errorData.message || '정책 상태 변경에 실패했습니다.')
+      }
+
+      const data = await response.json()
+      console.log('✅ 정책 상태 변경 성공:', data)
+
+      // 정책 목록 새로고침
+      await fetchPolicies()
+    } catch (error) {
+      console.error('❌ 정책 상태 변경 실패:', error)
+      setError(error instanceof Error ? error.message : '정책 상태 변경 중 오류가 발생했습니다.')
+    }
   }
 
   const filteredTargets = targets.filter(
@@ -176,12 +282,45 @@ export default function SettingsContent() {
       policy.keywords.some((k) => k.toLowerCase().includes(searchTerm.toLowerCase())),
   )
 
+  // 에러 메시지 표시 및 자동 숨김
+  useEffect(() => {
+    if (error) {
+      const timer = setTimeout(() => {
+        setError(null)
+      }, 5000)
+      return () => clearTimeout(timer)
+    }
+  }, [error])
+
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-3xl font-bold text-gray-900">설정</h1>
-        <p className="text-gray-600">수크랩 - 한국수자원공사 모니터링 대상과 정책을 관리하세요</p>
+      <div className="flex justify-between items-center">
+        <div>
+          <h1 className="text-3xl font-bold text-gray-900">설정</h1>
+          <p className="text-gray-600">수크랩 - 한국수자원공사 모니터링 대상과 정책을 관리하세요</p>
+        </div>
+        <Button onClick={fetchPolicies} variant="outline" size="sm" disabled={loading}>
+          {loading ? (
+            <>
+              <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
+              로딩 중...
+            </>
+          ) : (
+            <>
+              <RefreshCw className="h-4 w-4 mr-2" />
+              새로고침
+            </>
+          )}
+        </Button>
       </div>
+
+      {/* 에러 메시지 */}
+      {error && (
+        <div className="bg-red-50 border border-red-200 rounded-lg p-4 flex items-center gap-2">
+          <AlertCircle className="h-5 w-5 text-red-600" />
+          <span className="text-red-800">{error}</span>
+        </div>
+      )}
 
       <Tabs defaultValue="targets" className="w-full">
         <TabsList>
@@ -415,7 +554,23 @@ export default function SettingsContent() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {filteredPolicies.map((policy) => (
+                  {loading ? (
+                    <TableRow>
+                      <TableCell colSpan={5} className="text-center py-8">
+                        <div className="flex items-center justify-center gap-2">
+                          <RefreshCw className="h-5 w-5 animate-spin" />
+                          <span>정책 데이터를 불러오는 중...</span>
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  ) : filteredPolicies.length === 0 ? (
+                    <TableRow>
+                      <TableCell colSpan={5} className="text-center py-8 text-gray-500">
+                        등록된 모니터링 정책이 없습니다.
+                      </TableCell>
+                    </TableRow>
+                  ) : (
+                    filteredPolicies.map((policy) => (
                     <TableRow key={policy.id}>
                       <TableCell className="font-medium">{policy.name}</TableCell>
                       <TableCell>
@@ -436,7 +591,11 @@ export default function SettingsContent() {
                         <Badge variant={policy.operator === "AND" ? "default" : "secondary"}>{policy.operator}</Badge>
                       </TableCell>
                       <TableCell>
-                        <Badge variant={policy.status === "active" ? "default" : "secondary"}>
+                        <Badge 
+                          variant={policy.status === "active" ? "default" : "secondary"}
+                          className="cursor-pointer hover:opacity-80"
+                          onClick={() => handleTogglePolicyStatus(policy)}
+                        >
                           {policy.status === "active" ? "활성" : "비활성"}
                         </Badge>
                       </TableCell>
@@ -451,7 +610,8 @@ export default function SettingsContent() {
                         </div>
                       </TableCell>
                     </TableRow>
-                  ))}
+                    ))
+                  )}
                 </TableBody>
               </Table>
             </CardContent>

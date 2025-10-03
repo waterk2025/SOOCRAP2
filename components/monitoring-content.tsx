@@ -23,6 +23,8 @@ interface MentionData {
   title: string
   query: string // 개별 쿼리 정보
   uniqueId: string // 고유 ID (중복 제거용)
+  policyId?: number // 모니터링 정책 ID
+  policyName?: string // 모니터링 정책 이름
 }
 
 // 모니터링 키워드 목록 (백엔드와 동일)
@@ -39,18 +41,18 @@ export default function MonitoringContent() {
   const [mentionsData, setMentionsData] = useState<MentionData[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const [collecting, setCollecting] = useState(false)
 
-  // 백엔드 API에서 데이터 가져오기
+  // 백엔드 API에서 데이터 가져오기 (데이터베이스에서만)
   const fetchMentionsData = async () => {
     try {
       setLoading(true)
       setError(null)
       
-      console.log('🚀 백엔드 API 호출 시작...');
-      console.log('📍 호출 URL: http://localhost:3001/api/monitoring/mentions?display=20');
+      console.log('🚀 데이터베이스에서 데이터 조회 시작...');
       
-      // 백엔드 API 호출 - query 없이 모든 키워드로 검색
-      const response = await fetch('http://localhost:3001/api/monitoring/mentions?display=20')
+      // 데이터베이스에서 데이터 가져오기 (제한 없음)
+      const response = await fetch('http://localhost:3001/api/monitoring/mentions?days=180')
       
       console.log('📡 API 응답 상태:', response.status, response.statusText);
       
@@ -64,30 +66,32 @@ export default function MonitoringContent() {
       console.log('📊 API 응답 데이터:', data);
       
       if (data.success && data.data) {
-        // 프론트엔드에서도 중복 제거 (uniqueId 기준)
-        const uniqueData = removeDuplicatesFrontend(data.data);
-        console.log(`🔄 프론트엔드 중복 제거: ${data.data.length}개 → ${uniqueData.length}개`);
+        setMentionsData(data.data)
+        setFilteredMentions(data.data)
+        console.log('✅ 데이터베이스에서 뉴스 데이터 가져오기 성공:', data.data.length, '개')
+        console.log('📊 감정 분포:', data.sentimentDistribution)
         
-        setMentionsData(uniqueData)
-        setFilteredMentions(uniqueData)
-        console.log('✅ 백엔드에서 뉴스 데이터 가져오기 성공:', uniqueData.length, '개')
-        console.log('🔍 검색된 키워드:', data.keywords)
-        
-        // 중복 제거 정보 표시
-        if (data.duplicateRemoved) {
-          console.log('🔄 백엔드에서 중복 제거 완료');
-          if (data.individualQueries) {
-            console.log('📊 키워드별 뉴스 수:', data.individualQueries);
-          }
-        }
+        // 감정 분석 데이터 상세 확인
+        const aiAnalyzedCount = data.data.filter((item: any) => item.aiAnalyzed).length;
+        const keywordBasedCount = data.data.filter((item: any) => !item.aiAnalyzed).length;
+        console.log('🤖 감정 분석 통계:');
+        console.log(`  - AI 분석: ${aiAnalyzedCount}개`);
+        console.log(`  - 키워드 기반: ${keywordBasedCount}개`);
         
         // 첫 번째 뉴스 데이터 구조 확인
-        if (uniqueData.length > 0) {
-          console.log('📰 첫 번째 뉴스 데이터 구조:', uniqueData[0]);
+        if (data.data.length > 0) {
+          const first = data.data[0];
+          console.log('📰 첫 번째 뉴스 감정 분석 정보:');
+          console.log('  - 제목:', first.title?.substring(0, 50) + '...');
+          console.log('  - 감정:', first.sentiment);
+          console.log('  - 신뢰도:', first.confidence);
+          console.log('  - AI분석:', first.aiAnalyzed);
+          console.log('  - 모델:', first.modelUsed);
+          console.log('  - 전체 구조:', first);
         }
       } else {
         console.error('❌ API 응답 데이터 형식 오류:', data);
-        throw new Error('API 응답 데이터 형식 오류')
+        throw new Error('데이터베이스에서 데이터를 가져올 수 없습니다.')
       }
     } catch (error) {
       console.error('❌ 백엔드 API 호출 실패:', error)
@@ -163,26 +167,45 @@ export default function MonitoringContent() {
 ]
 
       setMentionsData(fallbackData)
+      // 폴백 데이터 모두 표시
       setFilteredMentions(fallbackData)
     } finally {
       setLoading(false)
     }
   }
 
-  // 프론트엔드에서 중복 제거 (uniqueId 기준)
-  const removeDuplicatesFrontend = (data: MentionData[]) => {
-    const seen = new Set();
-    const uniqueData: MentionData[] = [];
-    
-    for (const item of data) {
-      if (item.uniqueId && !seen.has(item.uniqueId)) {
-        seen.add(item.uniqueId);
-        uniqueData.push(item);
+  // 뉴스 수집 함수
+  const collectNews = async () => {
+    try {
+      setCollecting(true)
+      console.log('🚀 뉴스 수집 시작...');
+      
+      const response = await fetch('http://localhost:3001/api/monitoring/collect-news', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        }
+      });
+      
+      if (!response.ok) {
+        throw new Error(`뉴스 수집 실패: ${response.status}`);
       }
+      
+      const result = await response.json();
+      console.log('✅ 뉴스 수집 완료:', result);
+      
+      // 수집 완료 후 데이터 새로고침
+      await fetchMentionsData();
+      
+    } catch (error) {
+      console.error('❌ 뉴스 수집 실패:', error);
+      setError(error instanceof Error ? error.message : '뉴스 수집 중 오류가 발생했습니다.');
+    } finally {
+      setCollecting(false);
     }
-    
-    return uniqueData;
   }
+
+
 
   // 컴포넌트 마운트 시 데이터 가져오기
   useEffect(() => {
@@ -192,10 +215,14 @@ export default function MonitoringContent() {
   const handleSearch = () => {
     let filtered = mentionsData
 
+    // 모든 데이터 표시 (AI 분석된 것과 키워드 기반 모두)
+    // filtered = filtered.filter((mention) => mention.aiAnalyzed) // 이 줄 제거
+
     if (searchTerm) {
       filtered = filtered.filter(
         (mention) =>
           mention.content.toLowerCase().includes(searchTerm.toLowerCase()) ||
+          mention.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
           mention.keywords.some((keyword) => keyword.toLowerCase().includes(searchTerm.toLowerCase())),
       )
     }
@@ -230,23 +257,31 @@ export default function MonitoringContent() {
   }
 
   const getAISentimentBadge = (mention: MentionData) => {
+    // 감정이 없거나 null인 경우 처리
+    if (!mention.sentiment) {
+      return (
+        <Badge className="bg-gray-100 text-gray-600 border-gray-300">
+          ❓ 분석 중
+        </Badge>
+      );
+    }
+
     const baseColor = getSentimentColor(mention.sentiment);
     const sentimentText = getSentimentText(mention.sentiment);
     
     if (mention.aiAnalyzed) {
       const confidence = mention.confidence ? Math.round(mention.confidence * 100) : 50;
       return (
-        <div className="flex items-center gap-1">
-          <Badge className={`${baseColor} border-blue-500`}>
-            🤖 {sentimentText}
-          </Badge>
-          <span className="text-xs text-blue-600 font-medium">{confidence}%</span>
-        </div>
+        <Badge className={`${baseColor} border-blue-500`}>
+          🤖 {sentimentText} ({confidence}%)
+        </Badge>
       );
     } else {
+      // 키워드 기반 감정분석 결과 표시
+      const confidence = mention.confidence ? Math.round(mention.confidence * 100) : 60;
       return (
         <Badge className={`${baseColor} border-gray-400`}>
-          🔑 {sentimentText}
+          🔑 {sentimentText} ({confidence}%)
         </Badge>
       );
     }
@@ -284,10 +319,25 @@ export default function MonitoringContent() {
         <h1 className="text-3xl font-bold text-gray-900">모니터링</h1>
         <p className="text-gray-600">수크랩 - 한국수자원공사 관련 실시간 언급 피드</p>
         </div>
-        <Button onClick={fetchMentionsData} variant="outline" size="sm">
-          <RefreshCw className="h-4 w-4 mr-2" />
-          새로고침
-        </Button>
+        <div className="flex gap-2">
+          <Button onClick={fetchMentionsData} variant="outline" size="sm">
+            <RefreshCw className="h-4 w-4 mr-2" />
+            새로고침
+          </Button>
+          <Button onClick={collectNews} variant="default" size="sm" disabled={collecting}>
+            {collecting ? (
+              <>
+                <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
+                수집 중...
+              </>
+            ) : (
+              <>
+                <Search className="h-4 w-4 mr-2" />
+                뉴스 수집
+              </>
+            )}
+          </Button>
+        </div>
       </div>
 
       {/* Filters */}
@@ -329,16 +379,8 @@ export default function MonitoringContent() {
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             실시간 언급 피드
-            <div className="flex items-center gap-1 text-sm">
-              <Badge variant="outline" className="text-xs bg-blue-50 text-blue-700">
-                🤖 AI: {filteredMentions.filter(m => m.aiAnalyzed).length}개
-              </Badge>
-              <Badge variant="outline" className="text-xs bg-gray-50 text-gray-700">
-                🔑 키워드: {filteredMentions.filter(m => !m.aiAnalyzed).length}개
-              </Badge>
-            </div>
           </CardTitle>
-          <CardDescription>{filteredMentions.length}개 언급 표시 중</CardDescription>
+          <CardDescription>총 {filteredMentions.length}개 언급 표시 중</CardDescription>
         </CardHeader>
         <CardContent>
           <div className="space-y-4">
@@ -358,19 +400,18 @@ export default function MonitoringContent() {
                 {/* 제목 표출 */}
                 <h3 className="font-bold text-lg text-gray-900 mb-2">{mention.title}</h3>
                 
-                {/* 쿼리 정보 표출 */}
-                <div className="flex items-center gap-2 mb-2">
-                  <Badge variant="outline" className="text-xs bg-blue-50 text-blue-700">
-                    🔍 {mention.query}
-                  </Badge>
-                  <span className="text-xs text-gray-500">검색 키워드</span>
-                </div>
-                
                 {/* 내용 표출 */}
                 <p className="text-gray-700 mb-3">{mention.content}</p>
 
                 <div className="flex justify-between items-center">
-                  <div className="flex gap-2">
+                  <div className="flex gap-2 flex-wrap">
+                    {/* 정책 이름 뱃지 */}
+                    {mention.policyName && (
+                      <Badge variant="secondary" className="text-xs bg-blue-100 text-blue-800 border-blue-300">
+                        📋 {mention.policyName}
+                      </Badge>
+                    )}
+                    {/* 키워드 뱃지들 */}
                     {mention.keywords.map((keyword, index) => (
                       <Badge key={index} variant="outline" className="text-xs">
                         {keyword}

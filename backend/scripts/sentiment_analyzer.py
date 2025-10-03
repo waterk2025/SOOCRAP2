@@ -80,8 +80,6 @@ class KoreanSentimentAnalyzer:
                 result = self._classify_sentiment(scores)
                 confidence = float(max(scores))
                 
-                logger.info(f"Sentiment: {result}, Confidence: {confidence:.3f}")
-                
                 return {
                     "sentiment": result,
                     "confidence": confidence,

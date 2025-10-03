@@ -1,6 +1,5 @@
 const { PythonShell } = require('python-shell');
 const path = require('path');
-const fs = require('fs').promises;
 
 /**
  * 고도화된 한국어 감정분석 서비스
@@ -42,24 +41,14 @@ const KOREAN_SENTIMENT_MODELS = {
 async function runPythonSentimentAnalysis(newsData, modelName = "klue/bert-base") {
   return new Promise((resolve, reject) => {
     try {
-      console.log('🤖 Python 감정분석 실행 준비...');
-      
       const scriptPath = path.join(__dirname, '..', 'scripts', 'sentiment_analyzer.py');
-      console.log('📜 Python 스크립트 경로:', scriptPath);
       
       // 입력 데이터 준비
       const inputData = {
         news_data: newsData,
         model_name: modelName
       };
-      console.log('📤 입력 데이터 구조:', {
-        news_data_count: newsData.length,
-        model_name: modelName,
-        first_item_preview: newsData.length > 0 ? {
-          title: newsData[0].title?.substring(0, 30) + '...',
-          description: newsData[0].description?.substring(0, 50) + '...'
-        } : 'N/A'
-      });
+      // 입력 데이터 구조 확인 완료
       
       const options = {
         mode: 'text', // 'json' 대신 'text' 사용하여 수동 파싱
@@ -73,18 +62,9 @@ async function runPythonSentimentAnalysis(newsData, modelName = "klue/bert-base"
         }
       };
       
-      console.log('⚙️ Python 실행 옵션:', {
-        pythonPath: options.pythonPath,
-        scriptPath: options.scriptPath,
-        pythonOptions: options.pythonOptions,
-        envKeys: Object.keys(options.env)
-      });
-      
-      console.log(`🤖 Python 감정분석 시작: ${modelName}`);
-      console.log(`📊 분석할 뉴스 데이터: ${newsData.length}개`);
+      console.log(`🤖 Python 감정분석 시작: ${newsData.length}개 뉴스`);
       
       const pyshell = new PythonShell(path.basename(scriptPath), options);
-      console.log('✅ PythonShell 객체 생성 완료');
       
       let result = null;
       let error = null;
@@ -136,7 +116,6 @@ async function runPythonSentimentAnalysis(newsData, modelName = "klue/bert-base"
             const jsonStartIndex = jsonContent.indexOf('{');
             if (jsonStartIndex !== -1) {
               jsonContent = jsonContent.substring(jsonStartIndex);
-              console.log('🔍 JSON 시작 위치 찾음, 추출된 내용:', jsonContent.substring(0, 100) + '...');
             }
             
             try {
@@ -144,12 +123,10 @@ async function runPythonSentimentAnalysis(newsData, modelName = "klue/bert-base"
               console.log('✅ JSON 파싱 성공');
             } catch (parseError) {
               console.warn('⚠️ JSON 파싱 실패, 원본 데이터 반환:', parseError.message);
-              console.log('📝 파싱 실패한 원본 데이터:', fullOutput);
-              console.log('📝 추출 시도한 JSON 내용:', jsonContent);
+              
               parsedResult = { error: 'JSON 파싱 실패', raw_output: fullOutput };
             }
             
-            console.log('🎯 최종 반환 결과:', parsedResult);
             resolve(parsedResult);
           } catch (parseError) {
             console.error('❌ 결과 처리 중 오류:', parseError.message);
@@ -169,74 +146,31 @@ async function runPythonSentimentAnalysis(newsData, modelName = "klue/bert-base"
 }
 
 /**
- * 기존 저장된 뉴스 데이터 로드
+ * 데이터베이스에서 뉴스 데이터 로드
  * @returns {Promise<Array>} 뉴스 데이터 배열
  */
 async function loadExistingNewsData() {
   try {
-    console.log('📚 기존 저장된 뉴스 데이터 로드 시작...');
+    const Article = require('../models/Article');
+    console.log('📚 데이터베이스에서 뉴스 데이터 로드 시작...');
     
-    const dataDir = path.join(__dirname, '..', 'data');
-    console.log('📁 데이터 디렉토리 경로:', dataDir);
+    const articles = await Article.findAll({
+      order: [['created_at', 'DESC']],
+      limit: 1000 // 최대 1000개로 제한
+    });
     
-    // data 폴더가 없으면 빈 배열 반환
-    try {
-      await fs.access(dataDir);
-    } catch (error) {
-      console.log('📁 data 폴더가 존재하지 않습니다.');
-      return [];
-    }
+    console.log(`📚 데이터베이스에서 ${articles.length}개 기사 로드 완료`);
     
-    console.log('✅ data 폴더 존재 확인 완료');
+    // 감성분석용 형태로 변환
+    const formattedData = articles.map(article => ({
+      title: article.title,
+      description: article.content
+    }));
     
-    // 뉴스 데이터 JSON 파일들만 찾기
-    console.log('🔍 뉴스 데이터 JSON 파일 검색 중...');
-    const files = await fs.readdir(dataDir);
-    console.log(`📋 전체 파일 목록 (${files.length}개):`, files);
-    
-    // news_data_ 로 시작하는 JSON 파일만 필터링
-    const newsJsonFiles = files.filter(file => 
-      file.startsWith('news_data_') && file.endsWith('.json')
-    ).sort().reverse();
-    console.log(`📄 뉴스 데이터 JSON 파일 목록 (${newsJsonFiles.length}개):`, newsJsonFiles);
-    
-    if (newsJsonFiles.length === 0) {
-      console.log('📁 뉴스 데이터 파일이 없습니다.');
-      return [];
-    }
-    
-    // 가장 최근 파일 로드
-    const latestFile = newsJsonFiles[0];
-    console.log('⭐ 가장 최근 파일 선택:', latestFile);
-    
-    const filepath = path.join(dataDir, latestFile);
-    console.log('📂 전체 파일 경로:', filepath);
-    
-    console.log('📖 파일 읽기 시작...');
-    const fileContent = await fs.readFile(filepath, 'utf8');
-    console.log(`📊 파일 크기: ${fileContent.length} 문자`);
-    console.log('📝 파일 내용 미리보기 (처음 200자):', fileContent.substring(0, 200));
-    
-    console.log('🔄 JSON 파싱 시작...');
-    const data = JSON.parse(fileContent);
-    console.log(`✅ JSON 파싱 완료: ${typeof data}, 길이: ${Array.isArray(data) ? data.length : 'N/A'}`);
-    
-    if (Array.isArray(data) && data.length > 0) {
-      console.log('📰 첫 번째 뉴스 항목 미리보기:');
-      console.log('  제목:', data[0].title?.substring(0, 50) + '...');
-      console.log('  설명:', data[0].description?.substring(0, 100) + '...');
-      console.log('  날짜:', data[0].pubDate);
-      console.log('  URL:', data[0].link);
-    }
-    
-    console.log(`📚 기존 데이터 파일 로드 완료: ${latestFile} (${data.length}개 항목)`);
-    return Array.isArray(data) ? data : [];
+    return formattedData;
     
   } catch (error) {
-    console.error('⚠️ 기존 데이터 로드 실패');
-    console.error('🚨 오류 타입:', error.constructor.name);
-    console.error('📝 오류 메시지:', error.message);
-    console.error('📚 오류 스택:', error.stack);
+    console.error('⚠️ 데이터베이스에서 데이터 로드 실패:', error.message);
     return [];
   }
 }
@@ -249,13 +183,21 @@ async function loadExistingNewsData() {
  */
 async function analyzeSentiment(textOrData, modelName = "klue/bert-base") {
   try {
+    console.log('🤖 감정분석 시작:', typeof textOrData, Array.isArray(textOrData) ? `배열 ${textOrData.length}개` : '단일 텍스트');
+    
     // 단일 텍스트인 경우
     if (typeof textOrData === 'string') {
       const newsData = [{
         title: '분석 텍스트',
         description: textOrData
       }];
-      return await runPythonSentimentAnalysis(newsData, modelName);
+      const result = await runPythonSentimentAnalysis(newsData, modelName);
+      
+      // 단일 텍스트의 경우 첫 번째 결과만 반환
+      if (result && result.individual_results && result.individual_results.length > 0) {
+        return result.individual_results[0];
+      }
+      return result;
     }
     
     // 뉴스 데이터 배열인 경우
@@ -332,7 +274,7 @@ async function analyzeAllExistingData(modelName = "klue/bert-base") {
     const enhancedResult = {
       ...sentimentResult,
       success: true,
-      data_source: 'backend/data',
+      data_source: 'database',
       analysis_timestamp: new Date().toISOString(),
       model_used: modelName,
       processing_time_ms: endTime - startTime,
@@ -340,11 +282,6 @@ async function analyzeAllExistingData(modelName = "klue/bert-base") {
     };
     
     console.log('✅ 4단계 완료: 결과 데이터 보강 완료');
-    
-    // 결과를 파일로 저장
-    console.log('\n💾 5단계: 결과 파일 저장...');
-    await saveSentimentAnalysisResult(enhancedResult);
-    console.log('✅ 5단계 완료: 결과 파일 저장 완료');
     
     console.log('\n🎉 전체 데이터 감정분석 완료!');
     console.log(`📊 총 처리된 데이터: ${existingData.length}개`);
@@ -368,32 +305,6 @@ async function analyzeAllExistingData(modelName = "klue/bert-base") {
   }
 }
 
-/**
- * 감정분석 결과를 파일로 저장
- * @param {Object} result - 감정분석 결과
- */
-async function saveSentimentAnalysisResult(result) {
-  try {
-    const dataDir = path.join(__dirname, '..', 'data');
-    const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
-    const filename = `sentiment_analysis_${timestamp}.json`;
-    const filepath = path.join(dataDir, filename);
-    
-    // data 폴더가 없으면 생성
-    const fsSync = require('fs');
-    if (!fsSync.existsSync(dataDir)) {
-      fsSync.mkdirSync(dataDir, { recursive: true });
-    }
-    
-    // 결과를 JSON 파일로 저장
-    await fs.writeFile(filepath, JSON.stringify(result, null, 2), 'utf8');
-    
-    console.log(`💾 감정분석 결과 저장: ${filepath}`);
-    
-  } catch (error) {
-    console.error('❌ 감정분석 결과 저장 실패:', error.message);
-  }
-}
 
 /**
  * 폴백 감정분석 (간단한 키워드 기반)

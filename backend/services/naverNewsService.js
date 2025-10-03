@@ -1,7 +1,7 @@
 const axios = require('axios');
 const dotenv = require('dotenv');
 
-dotenv.config({ path: './config.env' });
+dotenv.config({ path: './.env' });
 
 class NaverNewsService {
   constructor() {
@@ -14,7 +14,7 @@ class NaverNewsService {
     try {
       // API 키 확인
       if (!this.clientId || !this.clientSecret) {
-        throw new Error('네이버 API 키가 설정되지 않았습니다. config.env 파일을 확인해주세요.');
+        throw new Error('네이버 API 키가 설정되지 않았습니다. .env 파일을 확인해주세요.');
       }
 
       // 요청 파라미터 설정
